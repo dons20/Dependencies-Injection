@@ -1,13 +1,19 @@
-import { Users } from './services/users';
+import { createIoCContainer } from './ioc';
 import { Logger } from './services/logger';
+import type { User } from './types';
 
-import type { User, ApiConfig } from './types';
+const renderUsers = async (container: ReturnType<typeof createIoCContainer>) => {
+  const usersService = container.resolve('users');
 
-const renderUsers = async (config: ApiConfig) => {
-  const usersService = new Users(config);
-  const users = await usersService.getUsers();
+  if (!usersService || !usersService.getUsers) {
+    console.error('Users service is not available');
+    return;
+  }
+
+  const users = await usersService.getUsers() || [];
 
   const listNode = document.getElementById('users-list');
+  if (!listNode) return;
 
   users.forEach((user: User) => {
     const listItemNode = document.createElement('li');
@@ -21,7 +27,9 @@ const app = () => {
   const config = (window as any).__CONFIG__;
   delete (window as any).__CONFIG__;
 
-  renderUsers(config.api);
+  const container = createIoCContainer(config.api);
+
+  renderUsers(container);
 };
 
 window.onload = (event: Event) => {
